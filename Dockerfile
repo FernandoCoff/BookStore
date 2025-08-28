@@ -1,5 +1,5 @@
 # `python-base` sets up all our shared environment variables
-FROM python:3.13.1-slim as python-base
+FROM python:3.13.1-slim AS python-base
 
     # python
 ENV PYTHONUNBUFFERED=1 \
@@ -50,7 +50,7 @@ WORKDIR $PYSETUP_PATH
 COPY poetry.lock pyproject.toml ./
 
 # quicker install as runtime deps are already installed
-RUN poetry install --no-root
+RUN  poetry install --no-root
 
 WORKDIR /app
 
