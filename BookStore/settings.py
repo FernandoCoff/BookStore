@@ -56,7 +56,7 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
-ROOT_URLCONF = "BookStore.urls"
+ROOT_URLCONF = "bookstore.urls"
 
 TEMPLATES = [
     {
