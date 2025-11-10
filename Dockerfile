@@ -28,8 +28,10 @@ ENV PYTHONUNBUFFERED=1 \
     VENV_PATH="/opt/pysetup/.venv"
 
 
+# prepend poetry and venv to path
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 
+# Instala dependências do sistema
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         # deps for installing poetry
@@ -40,24 +42,50 @@ RUN apt-get update \
         libpq-dev \
         gcc
 
+# install poetry - respects $POETRY_VERSION & $POETRY_HOME
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
+# NOTA: Removi a linha 'pip install psycopg2'.
+# O Poetry deve cuidar disso através do seu `pyproject.toml`.
+# As dependências de build (libpq-dev, gcc) já estão instaladas.
+
+# copy project requirement files here to ensure they will be cached.
 WORKDIR $PYSETUP_PATH
 COPY poetry.lock pyproject.toml ./
 
+# quicker install as runtime deps are already installed
 RUN poetry install --no-root
 
+# Mudar para o diretório da aplicação
 WORKDIR /app
 
+# --- NOVO: Adicionar o script de entrypoint ---
+# Copia o script para a imagem
 COPY ./entrypoint.sh /app/entrypoint.sh
 
+# --- NOVO: Corrige line endings do Windows (\r\n) ---
+# Isso evita que o script falhe no Linux (erro status 128)
+RUN sed -i 's/\r$//' /app/entrypoint.sh
+
+# Torna o script executável
 RUN chmod +x /app/entrypoint.sh
 # ----------------------------------------------
 
+# Copia o restante do código da aplicação
 COPY . /app/
 
 EXPOSE 8000
 
+# --- NOVO: Define o entrypoint ---
+# Este script rodará as migrações e DEPOIS o CMD
 ENTRYPOINT ["/app/entrypoint.sh"]
 
+# O comando padrão para rodar (será passado para o entrypoint.sh)
+# ATENÇÃO: 'runserver' é apenas para desenvolvimento.
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+# --- RECOMENDADO PARA PRODUÇÃO ---
+# 1. Adicione `gunicorn` ao seu `pyproject.toml` com `poetry add gunicorn`
+# 2. Comente o CMD acima e descomente o abaixo.
+# 3. Substitua 'seu_projeto_wsgi' pelo nome da pasta do seu projeto (que contém o wsgi.py)
+# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "seu_projeto_wsgi.wsgi:application"]
