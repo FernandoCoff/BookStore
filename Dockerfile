@@ -28,7 +28,6 @@ ENV PYTHONUNBUFFERED=1 \
     VENV_PATH="/opt/pysetup/.venv"
 
 
-# prepend poetry and venv to path
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 
 RUN apt-get update \
@@ -36,26 +35,29 @@ RUN apt-get update \
         # deps for installing poetry
         curl \
         # deps for building python deps
-        build-essential
+        build-essential \
+        # dependências para compilar psycopg2
+        libpq-dev \
+        gcc
 
-# install poetry - respects $POETRY_VERSION & $POETRY_HOME
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
-RUN apt-get update \
-    && apt-get -y install libpq-dev gcc \
-    && pip install psycopg2
-
-# copy project requirement files here to ensure they will be cached.
 WORKDIR $PYSETUP_PATH
 COPY poetry.lock pyproject.toml ./
 
-# quicker install as runtime deps are already installed
-RUN  poetry install --no-root
+RUN poetry install --no-root
 
 WORKDIR /app
+
+COPY ./entrypoint.sh /app/entrypoint.sh
+
+RUN chmod +x /app/entrypoint.sh
+# ----------------------------------------------
 
 COPY . /app/
 
 EXPOSE 8000
+
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
