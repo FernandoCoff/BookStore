@@ -40,7 +40,9 @@ RUN apt-get update \
         build-essential \
         # dependências para compilar psycopg2
         libpq-dev \
-        gcc
+        gcc \
+        # --- NOVO: Adiciona o utilitário dos2unix ---
+        dos2unix
 
 # install poetry - respects $POETRY_VERSION & $POETRY_HOME
 RUN curl -sSL https://install.python-poetry.org | python3 -
@@ -63,9 +65,10 @@ WORKDIR /app
 # Copia o script para a imagem
 COPY ./entrypoint.sh /app/entrypoint.sh
 
-# --- NOVO: Corrige line endings do Windows (\r\n) ---
-# Isso evita que o script falhe no Linux (erro status 128)
-RUN sed -i 's/\r$//' /app/entrypoint.sh
+# --- NOVO: Corrige line endings usando dos2unix ---
+# Esta é uma forma mais robusta de garantir que o script
+# tenha o formato de final de linha do Unix (LF).
+RUN dos2unix /app/entrypoint.sh
 
 # Torna o script executável
 RUN chmod +x /app/entrypoint.sh
