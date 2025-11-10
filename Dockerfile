@@ -79,9 +79,10 @@ COPY . /app/
 
 EXPOSE 8000
 
-# --- NOVO: Define o entrypoint ---
-# Este script rodará as migrações e DEPOIS o CMD
-ENTRYPOINT ["/app/entrypoint.sh"]
+# --- MUDANÇA: Define o entrypoint ---
+# Em vez de executar o script diretamente, o chamamos com 'sh'.
+# Isso contorna problemas de line-ending e shebang que causam o erro 128.
+ENTRYPOINT ["sh", "/app/entrypoint.sh"]
 
 # O comando padrão para rodar (será passado para o entrypoint.sh)
 # ATENÇÃO: 'runserver' é apenas para desenvolvimento.
